@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desktop</title>
+    <style>
+        :root {
+            --cLineColor: #452B23;
+            --cEyeColor: #FCFCCB;
+            --cEarColor: #b2d59f;
+            --cMouthColor: #3D9098;
+            --noonColor: #ffff88;
+            --afternoonColor: #9cdcfe;
+            --duskColor: #ff6600;
+            --nightColor: #0070c0;
+            --deepnightColor: #5730a0;
+        }
+        body {
+            background-color: #b2d59f;
+        }
+        .Cat {
+            display: flex;
+            /* justify-content: center; */
+            /* align-items: center; */
+            height: 40vh;
+            width: 100vw;
+            left: 50%;
+            top: 50%;
+            position: absolute;
+        }
+        .CBody {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: #000000;
+            border: 5px solid var(--cLineColor);
+            border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+            transform: rotate(0deg);
+        }
+        .CHead {
+            position: absolute;
+            width: 310px;
+            height: 300px;
+            background-color: #000000;
+            border: 10px solid #452B23;
+            border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+            transform: translate(-50%, -50%) rotate(0deg);
+        }
+        .CEye {
+            position: absolute;
+            width: 60px;
+            height: 80px;
+            background-color: #000000;
+            border: 10px solid #452B23;
+            border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+            transform: translate(-50%, -50%);
+        }
+        canvas {
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            transform: translate(-50%, -50%);
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+    <div class="Cat">
+        <canvas id="cBody"></canvas>
+        <canvas id="cHead"></canvas>
+    </div>
+
+    <script>
+        const cBasePointX = window.innerWidth / 2;
+        const cBasePointY = window.innerHeight / 2 - 150;
+        const dcStyle = getComputedStyle(document.documentElement);
+        const cLineColor = getColor("--cLineColor");
+        const cEyeColor = getColor("--cEyeColor");
+        const cEarColor = getColor("--cEarColor");
+        const cMouthColor = getColor("--cMouthColor");
+        const morningColor = cEarColor;
+        const noonColor = getColor("--noonColor");
+        const afternoonColor = getColor("--afternoonColor");
+        const duskColor = getColor("--duskColor");
+        const nightColor = getColor("--nightColor");
+        const deepnightColor = getColor("--deepnightColor");
+
+        const cHead = document.getElementById("cHead");
+        const cBody = document.getElementById("cBody");
+        cHead.width = 800;
+        cHead.height = 800;
+        const ctxHead = cHead.getContext('2d');
+        const ctxBody = cBody.getContext('2d');
+
+        let cLeftEyeCenterX = 0;
+        let cLeftEyeCenterY = 0;
+        let cRightEyeCenterX = 0;
+        let cRightEyeCenterY = 0;
+        let cEyeStatus = 0;
+        let cMouthStatus = 0;
+        let cTailTipStatus = 0;
+        let cTailTipX = 640;
+        let cTailTipY = 705;
+        let touchHead = false;
+        let cMousePointX = 400;
+        let cMousePointY = 400;
+        let cTailTipSwingCode = 0;
+        let cTailTipSpeed = 2;
+        let cEarStatus = 0;
+        let cTouchHeadTimes = 0;
+
+
+        const CEyeStatus = {
+            OPEN: 0,
+            CLOSE: 1
+        }
+
+        const CMouthStatus = {
+            NONE: 0,
+            SMILE: 1,
+            HAPPY: 2
+        }
+
+        const CTailTipStatus = {
+            STATIC: 0,
+            TEASE: 1
+        }
+
+        const CEarStatus = {
+            NORMAL: 0,
+            DOWN: 1
+        }
+
+        const cLeftEyePoints1 = [
+            { x: 305, y: 285 },
+            { x: 335, y: 270 },
+            { x: 375, y: 280 },
+            { x: 395, y: 410 },
+            { x: 315, y: 470 },
+            { x: 255, y: 450 },
+            { x: 245, y: 400 },
+            { x: 250, y: 360 },
+            { x: 260, y: 340 },
+            { x: 290, y: 294 },
+            { x: 290, y: 300 }
+        ];
+        const cRightEyePoints1 = getMirrorV(cLeftEyePoints1, 400);
+        const cLeftEarIPoints = [
+            { x: 245, y: 380 },
+            { x: 235, y: 300 },
+            { x: 240, y: 235 },
+            { x: 243, y: 235 },
+            { x: 270, y: 270 },
+            { x: 290, y: 330 }
+        ];
+        const cRightEarIPoints = getMirrorV(cLeftEarIPoints, 400);
+        const cLeftEarDownIPoints = [
+            { x: 245, y: 380 },
+            { x: 233, y: 310 },
+            { x: 230, y: 262 },
+            { x: 230, y: 262 },
+            { x: 270, y: 280 },
+            { x: 290, y: 330 }
+        ];
+        const cRightEarDownIPoints = getMirrorV(cLeftEarDownIPoints, 400);
+        const cLeftEarOPoints = [
+            { x: 245, y: 380 },
+            { x: 235, y: 300 },
+            { x: 238, y: 225 },
+            { x: 243, y: 225 },
+            { x: 290, y: 235 },
+            { x: 380, y: 300 }
+        ];
+        const cRightEarOPoints = getMirrorV(cLeftEarOPoints, 400);
+        const cLeftEarDownOPoints = [
+            { x: 245, y: 380 },
+            { x: 235, y: 300 },
+            { x: 225, y: 250 },
+            { x: 232, y: 252 },
+            { x: 290, y: 257 },
+            { x: 380, y: 285 }
+        ];
+        const cRightEarDownOPoints = getMirrorV(cLeftEarDownOPoints, 400);
+        const cHappyPoints = [
+            { x: 370, y: 480 },
+            { x: 430, y: 480 },
+            { x: 400, y: 537 }
+        ]
+        const cBodyPoints = [
+            { x: 345, y: 540 },
+            { x: 300, y: 660 },
+            { x: 400, y: 680 },
+            { x: 500, y: 660 },
+            { x: 455, y: 540 },
+            { x: 455, y: 540 }
+        ];
+        const cLeftHandPoints = [
+            { x: 345, y: 600 },
+            { x: 335, y: 700 },
+            { x: 370, y: 700 },
+            { x: 380, y: 620 },
+            { x: 380, y: 620 }
+        ]
+        const cRightHandPoints = getMirrorV(cLeftHandPoints, 400);
+        const cLeftEyeClosePoints = [
+            { x: 260, y: 390 },
+            { x: 315, y: 408 },
+            { x: 380, y: 440 },
+            { x: 380, y: 440 }
+        ]
+        const cRightEyeClosePoints = getMirrorV(cLeftEyeClosePoints, 400);
+
+        const cTailPoints = [
+            { x: 480, y: 640 },
+            { x: 550, y: 660 },
+            { x: 640, y: 650 },
+            { x: 680, y: 640 },
+            { x: 750, y: 640 },
+            { x: 780, y: 675 },
+            { x: 740, y: 710 },
+            { x: 640, y: 705 },
+            { x: 640, y: 705 }
+        ]
+
+        const cSmailPoints = [
+            { x: 370, y: 500 },
+            { x: 400, y: 515 },
+            { x: 430, y: 500 },
+            { x: 430, y: 500 }
+        ]
+
+        const cLeftEyePoints = [
+            { x: 257, y: 360 },
+            { x: 275, y: 320 },
+            { x: 315, y: 290 },
+            { x: 370, y: 305 },
+            { x: 395, y: 390 },
+            { x: 377, y: 471 },
+            { x: 315, y: 485 },
+            { x: 265, y: 458 },
+            { x: 250, y: 405 },
+            { x: 257, y: 360 },
+            { x: 275, y: 320 }
+        ];
+        const cRightEyePoints = getMirrorV(cLeftEyePoints, 400);
+
+        const cLeftEyePupilPoints = [
+            { x: 370, y: 480 },
+            { x: 400, y: 520 },
+            { x: 430, y: 480 },
+            { x: 430, y: 480 }
+        ]
+
+        blink();
+        setBackground();
+        setInterval(setBackground, 60000);
+        drawCat();
+        
+        // cLeftEarDownIPoints.forEach(point => {
+        //     drawCircle(ctxHead, point.x, point.y, 5, 'green');
+        // });
+        // drawCircle(ctxHead, 350, 300, 5, 'green');
+        function cTailSwing() {
+            if(cTailTipStatus == CTailTipStatus.STATIC){
+                switch(cTailTipSwingCode){
+                    case 0:
+                        cTailTipSpeed = 10;
+                        cTailTipMoveTo(-0.3);
+                        cTailTipSwingCode = 1;
+                        setTimeout(cTailSwing, 100);
+                        break;
+                    case 1:
+                        cTailTipMoveTo(0.2);
+                        cTailTipSwingCode = 2;
+                        setTimeout(cTailSwing, 50);
+                        break;
+                    case 2:
+                        cTailTipX = 640;
+                        cTailTipY = 705;
+                        cTailTipSwingCode = 0;
+                        cTailTipMove();
+                        cTailTipSpeed = 2;
+                        break;
+                }
+            }
+        }
+
+        function cTailTipMove() {
+            if(distanceP2XY(cTailPoints[8], cTailTipX, cTailTipY) < cTailTipSpeed){
+                setTailTip(cTailTipX, cTailTipY);
+            }else{
+                const angle = angleP2XY(cTailPoints[8], cTailTipX, cTailTipY);
+                const cx = cTailPoints[8].x - cTailTipSpeed * Math.cos(angle);
+                const cy = cTailPoints[8].y - cTailTipSpeed * Math.sin(angle);
+                setTailTip(cx, cy);
+                setTimeout(cTailTipMove, 20);
+            }
+        }
+
+        function setTailTip(x, y) {
+            cTailPoints[7].x = x;
+            cTailPoints[7].y = y;
+            cTailPoints[8].x = x;
+            cTailPoints[8].y = y;
+            drawCat();
+        }
+
+        function distanceP2XY(point, x, y) {
+            return Math.sqrt((point.x - x) * (point.x - x) + (point.y - y) * (point.y - y));
+        }
+
+        function angleP2XY(point, x, y) {
+            return Math.atan2(point.y - y, point.x - x);
+        }
+
+        function drawTail() {
+            drawCircle(ctxHead, cTailPoints[cTailPoints.length - 1].x, cTailPoints[cTailPoints.length - 1].y, 20, cLineColor);
+            drawCircle(ctxHead, cTailPoints[cTailPoints.length - 1].x, cTailPoints[cTailPoints.length - 1].y, 12, '#000000');
+            drawCurve(ctxHead, cTailPoints, 40);
+            drawCurve(ctxHead, cTailPoints, 24, '#000000');
+        }
+
+        function drawEye() {
+            if(cEyeStatus == CEyeStatus.OPEN) {
+                drawSmoothCurve(ctxHead, cLeftEyePoints, cEyeColor);
+                drawSmoothCurve(ctxHead, cRightEyePoints, cEyeColor);
+                drawEllipse(ctxHead, 323 + cLeftEyeCenterX, 386 + cLeftEyeCenterY, 35, 50, 0, 0, 2 * Math.PI, 0, '#000000');
+                drawEllipse(ctxHead, 477 + cRightEyeCenterX, 386 + cRightEyeCenterY, 35, 50, 0, 0, 2 * Math.PI, 0, '#000000');
+            }else if(cEyeStatus == CEyeStatus.CLOSE) {
+                drawcLine(ctxHead, cLeftEyeClosePoints, 10);
+                drawcLine(ctxHead, cRightEyeClosePoints, 10);
+            }
+        }
+
+        function drawMouth() {
+            if(cMouthStatus == CMouthStatus.SMILE) {
+                drawcLine(ctxHead, cSmailPoints, 10, cLineColor);
+            }else if(cMouthStatus == CMouthStatus.HAPPY) {
+                drawPolygon(ctxHead, cHappyPoints, cMouthColor);
+            }
+        }
+
+        function drawEar() {
+            if(cEarStatus == CEarStatus.NORMAL) {
+                drawSmoothCurve(ctxHead, cLeftEarOPoints, '#000000');
+                drawSmoothCurve(ctxHead, cRightEarOPoints, '#000000');
+                drawSmoothCurve(ctxHead, cLeftEarIPoints, cEarColor);
+                drawSmoothCurve(ctxHead, cRightEarIPoints, cEarColor);
+            }else if(cEarStatus == CEarStatus.DOWN) {
+                drawSmoothCurve(ctxHead, cLeftEarDownOPoints, '#000000');
+                drawSmoothCurve(ctxHead, cRightEarDownOPoints, '#000000');
+                drawSmoothCurve(ctxHead, cLeftEarDownIPoints, cEarColor);
+                drawSmoothCurve(ctxHead, cRightEarDownIPoints, cEarColor);
+            }
+        }
+
+        function drawCat() {
+            ctxHead.clearRect(0, 0, cHead.width, cHead.height);
+            drawTail();
+            drawSmoothCurve(ctxHead, cBodyPoints, '#000000');
+            drawHand(ctxHead, cLeftHandPoints);
+            drawHand(ctxHead, cRightHandPoints);
+            drawEar();
+            drawEllipse(ctxHead, 400, 400, 155, 135, 0, 0, 2 * Math.PI, 0, '#000000');
+            drawMouth();
+            drawEye();
+        }
+
+        function blink() {
+            const interval = Math.random() * 5000 + 4000;
+            cEyeStatus = CEyeStatus.CLOSE;
+            drawCat();
+            setTimeout(() => {
+                if(!touchHead)
+                    cEyeStatus = CEyeStatus.OPEN;
+                drawCat();
+            }, 100);
+            setTimeout(blink, interval);
+            if(Math.random() < 0.01)
+                cMouthStatus = CMouthStatus.NONE;
+            if(Math.random() < 0.2)
+                setTimeout(cTailSwing, Math.random() * 10000);
+            if(Math.random() < 0.2)
+                setTimeout(() => {
+                    cEarStatus = CEarStatus.DOWN;
+                    drawCat();
+                    setTimeout(() => {
+                        cEarStatus = CEarStatus.NORMAL;
+                        drawCat();
+                    }, 100);
+                }, Math.random() * 10000);
+        }
+
+        function setBackground() {
+            const now = new Date();
+            // const hours = 6;
+            // const minutes = 0;
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            if (hours >= 7 && hours < 12) {
+                document.body.style.backgroundColor = getIntervalColor(morningColor, noonColor, (hours - 7 + minutes / 60) / 5);
+            }else if(hours >= 12 && hours < 17) {
+                document.body.style.backgroundColor = getIntervalColor(noonColor, afternoonColor, (hours - 12 + minutes / 60) / 6);
+            }else if(hours >= 17 && hours < 18) {
+                document.body.style.backgroundColor = getIntervalColor(afternoonColor, duskColor, (hours - 17 + minutes / 60));
+            }else if(hours >= 18 && hours < 19) {
+                document.body.style.backgroundColor = getIntervalColor(duskColor, nightColor, (hours - 18 + minutes / 60));
+            }else if(hours >= 19) {
+                document.body.style.backgroundColor = getIntervalColor(nightColor, deepnightColor, (hours - 19 + minutes / 60) / 5);
+            }else{
+                document.body.style.backgroundColor = getIntervalColor(deepnightColor, morningColor, (hours + minutes / 60) / 7);
+            }
+        }
+
+        function getIntervalColor(color1, color2, percentage) {
+            const chex1 = color1.replace('#', '');
+            const chex2 = color2.replace('#', '');
+            const r1 = parseInt(chex1.substring(0, 2), 16);
+            const g1 = parseInt(chex1.substring(2, 4), 16);
+            const b1 = parseInt(chex1.substring(4, 6), 16);
+            const r = (parseInt(chex2.substring(0, 2), 16) - r1) * percentage + r1;
+            const g = (parseInt(chex2.substring(2, 4), 16) - g1) * percentage + g1;
+            const b = (parseInt(chex2.substring(4, 6), 16) - b1) * percentage + b1;
+            return `rgb(${r}, ${g}, ${b})`
+        }
+
+        function drawSmoothCurve(ctx, points, color) {
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+
+            for (let i = 1; i < points.length; i++) {
+                const start = points[i - 1];
+                const end = points[i];
+                const controlX = (start.x + end.x) / 2;
+                const controlY = (start.y + end.y) / 2;
+
+                ctx.quadraticCurveTo(start.x, start.y, controlX, controlY);
+            }
+
+            ctx.closePath();
+            ctx.strokeStyle = cLineColor;
+            ctx.lineWidth = 20;
+            ctx.stroke();
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        function drawCurve(ctx, points, lWidth, color=cLineColor) {
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+
+            for (let i = 1; i < points.length; i++) {
+                const start = points[i - 1];
+                const end = points[i];
+                const controlX = (start.x + end.x) / 2;
+                const controlY = (start.y + end.y) / 2;
+
+                ctx.quadraticCurveTo(start.x, start.y, controlX, controlY);
+            }
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lWidth;
+            ctx.stroke();
+        }
+
+        function drawCircle(ctx, point, radius, color) {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+        
+        function drawCircle(ctx, x, y, radius, color) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        function drawHand(ctx, points) {
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+
+            for (let i = 1; i < points.length; i++) {
+                const start = points[i - 1];
+                const end = points[i];
+                const controlX = (start.x + end.x) / 2;
+                const controlY = (start.y + end.y) / 2;
+
+                ctx.quadraticCurveTo(start.x, start.y, controlX, controlY);
+            }
+
+            ctx.closePath();
+            ctx.fillStyle = '#000000';
+            ctx.fill();
+
+            drawcLine(ctx, points, 10);
+        }
+
+        function drawEllipse(ctx, x, y, radiusX, radiusY, rotation, startAngle, endAngle, anticlockwise, color) {
+            ctx.save(); // 保存当前状态
+            ctx.beginPath(); // 开始绘制路径
+            ctx.translate(x, y); // 将坐标原点移动到椭圆的中心
+            ctx.rotate(rotation); // 旋转角度（可选）
+            ctx.scale(radiusX, radiusY); // 缩放x和y轴
+            ctx.arc(0, 0, 1, startAngle, endAngle, anticlockwise); // 绘制单位圆
+            ctx.restore(); // 恢复状态
+            ctx.strokeStyle = cLineColor;
+            ctx.lineWidth = 20;
+            ctx.stroke(); // 绘制路径
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        function drawPolygon(ctx, points, color) {
+            if (points.length < 3) {
+                console.error("至少需要3个顶点才能绘制多边形");
+                return;
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+
+            ctx.closePath();
+
+            ctx.fillStyle = color;
+            ctx.strokeStyle = cLineColor;
+            ctx.lineWidth = 8;
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawcLine(ctx, points, lWidth=10, color=cLineColor) {
+            drawCircle(ctx, points[0].x, points[0].y, lWidth / 2, color);
+            drawCircle(ctx, points[points.length - 1].x, points[points.length - 1].y, lWidth / 2, color);
+            drawCurve(ctx, points, lWidth, color);
+        }
+
+        function getMirrorV(points, mirrorPoint) {
+            const mirrorPoints = [];
+            for (let i = 0; i < points.length; i++) {
+                mirrorPoints.push({
+                    x: 2 * mirrorPoint - points[i].x,
+                    y: points[i].y
+                });
+            }
+            return mirrorPoints;
+        }
+
+        function getColor(color) {
+            return dcStyle.getPropertyValue(color).trim();
+        }
+
+        function cTailTipMoveTo(angle) {
+            cTailTipX = cTailPoints[6].x - 100 * Math.cos(angle);
+            cTailTipY = cTailPoints[6].y - 100 * Math.sin(angle);
+            cTailTipMove();
+        }
+
+        function teaseTailTip() {
+            if(distanceP2XY(cTailPoints[8], cMousePointX, cMousePointY) < 25){
+                const tailTipAngle = angleP2XY(cTailPoints[6], cTailPoints[8].x, cTailPoints[8].y);
+                let mouthAngle = angleP2XY(cTailPoints[6], cMousePointX, cMousePointY);
+                if(mouthAngle < tailTipAngle){
+                    mouthAngle = tailTipAngle + 0.02;
+                    if(mouthAngle > 0.2){
+                        mouthAngle = tailTipAngle - 0.5;
+                        setTailTip(cTailPoints[6].x - 100 * Math.cos(mouthAngle), cTailPoints[6].y - 100 * Math.sin(mouthAngle));
+                    }
+                }else{
+                    mouthAngle = tailTipAngle - 0.02;
+                    if(mouthAngle < -0.8){
+                        mouthAngle = tailTipAngle + 0.5;
+                        setTailTip(cTailPoints[6].x - 100 * Math.cos(mouthAngle), cTailPoints[6].y - 100 * Math.sin(mouthAngle));
+                    }
+                }
+                cTailTipMoveTo(mouthAngle);
+            }
+            if(cTailTipStatus == CTailTipStatus.TEASE)
+                setTimeout(teaseTailTip, 20);
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            const cRect = cHead.getBoundingClientRect();
+            cMousePointX = e.clientX - cRect.left;
+            cMousePointY = e.clientY - cRect.top;
+            if(cMousePointX < 480 && cMousePointX > 320 && cMousePointY < 290 && cMousePointY > 260) {
+                touchHead = true;
+                cEyeStatus = CEyeStatus.CLOSE;
+                if(++cTouchHeadTimes > 100){
+                    cEarStatus = CEarStatus.DOWN;
+                    if(cTouchHeadTimes > 200){
+                        cMouthStatus = CMouthStatus.SMILE;
+                        if(cTouchHeadTimes > 300)
+                            cMouthStatus = CMouthStatus.HAPPY;
+                    }
+                }
+                drawCat();
+            }else{
+                if(touchHead){
+                    touchHead = false;
+                    cEyeStatus = CEyeStatus.OPEN;
+                    cEarStatus = CEarStatus.NORMAL;
+                    cTouchHeadTimes = 0;
+                    setBackground();
+                }
+                
+                if(cEyeStatus == CEyeStatus.OPEN) {
+                    cLeftEyeCenterY = (e.clientY - window.innerHeight / 2 - 30) / 20;
+                    cRightEyeCenterY = (e.clientY - window.innerHeight / 2 - 30) / 20;
+                    cLeftEyeCenterX = (e.clientX - window.innerWidth / 2 - 80) / 30 / (Math.abs(cLeftEyeCenterY) / window.innerHeight * 30 + 1);
+                    cRightEyeCenterX = (e.clientX - window.innerWidth / 2 + 80) / 30 / (Math.abs(cLeftEyeCenterY) / window.innerHeight * 30 + 1);
+                    drawCat();
+                }
+            }
+
+            if(cTailTipStatus == CTailTipStatus.STATIC && distanceP2XY(cTailPoints[8], cMousePointX, cMousePointY) < 25){
+                cTailTipStatus = CTailTipStatus.TEASE;
+                cTailTipSpeed = 2;
+                teaseTailTip();
+            }else if(cTailTipStatus == CTailTipStatus.TEASE && distanceP2XY(cTailPoints[8], cMousePointX, cMousePointY) > 100){
+                cTailTipStatus = CTailTipStatus.STATIC;
+                cTailTipX = 640;
+                cTailTipY = 705;
+                cTailTipMove();
+            }
+        });
+    </script>
+</body>
+</html>
